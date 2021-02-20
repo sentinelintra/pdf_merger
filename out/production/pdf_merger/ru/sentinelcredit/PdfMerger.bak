@@ -1,0 +1,188 @@
+/* ====================================================================
+   Licensed to the Apache Software Foundation (ASF) under one or more
+   contributor license agreements.  See the NOTICE file distributed with
+   this work for additional information regarding copyright ownership.
+   The ASF licenses this file to You under the Apache License, Version 2.0
+   (the "License"); you may not use this file except in compliance with
+   the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+==================================================================== */
+
+import java.io.*;
+import java.net.*;
+
+import sun.misc.BASE64Encoder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+//import java.util.Base64;
+//import javax.xml.parsers.ParserConfigurationException;
+
+import org.apache.pdfbox.io.MemoryUsageSetting;
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
+
+// import Siebel dependencies
+import com.siebel.data.SiebelPropertySet;
+import com.siebel.eai.SiebelBusinessServiceException;
+
+import oracle.apps.xdo.common.pdf.util.PDFDocMerger;
+
+public class PdfMerger extends com.siebel.eai.SiebelBusinessService  {
+
+    private static String[] customParams = {"_paramsIdAsset", "_paramsDocId", "_paramsDiscMode", "_paramsDiscountId", "_paramsidCont", "_paramsRegVal"};
+
+    private static Map<String, String> getQueryMap(String query) {
+        String[] params = query.split("&");
+        Map<String, String> map = new HashMap<String, String>();
+
+        for (String param : params) {
+            int idx = param.indexOf("=");
+            if (idx > -1) {
+                String name = param.substring(0, idx);
+                String value = param.substring(idx+1);
+                map.put(name, value);
+            }
+        }
+        return map;
+    }
+
+    private static byte[] process11(Map map) throws Exception {
+        scm.bi.ArrayOfParamNameValue arrayOfParamNameValue = new scm.bi.ArrayOfParamNameValue();
+
+        for (String docParam: customParams) {
+            scm.bi.ParamNameValue paramNameValue = new scm.bi.ParamNameValue();
+            paramNameValue.setUIType("Text");
+            paramNameValue.setDataType("dataType");
+            paramNameValue.setDefaultValue((String)map.get(docParam));
+            paramNameValue.setName(docParam);
+            arrayOfParamNameValue.getItem().add(paramNameValue);
+        }
+
+        scm.bi.ParamNameValues paramNameValues = new scm.bi.ParamNameValues();
+        paramNameValues.setListOfParamNameValues(arrayOfParamNameValue);
+
+        scm.bi.ReportRequest biRequest = new scm.bi.ReportRequest();
+        biRequest.setReportAbsolutePath((String)map.get("_xdo"));
+        biRequest.setAttributeFormat("pdf");
+        biRequest.setParameterNameValues(paramNameValues);
+
+        scm.bi.ReportService biService = new scm.bi.ReportService_Service().getReportService();
+        scm.bi.ReportResponse biresponse = biService.runReport(biRequest, "weblogic", "sentinel12");
+
+        return biresponse.getReportBytes();
+    }
+
+    private static byte[] process12(Map map) throws Exception {
+        scm.bi12.ArrayOfParamNameValue arrayOfParamNameValue = new scm.bi12.ArrayOfParamNameValue();
+
+        for (String docParam: customParams) {
+            scm.bi12.ParamNameValue paramNameValue = new scm.bi12.ParamNameValue();
+            paramNameValue.setUIType("Text");
+            paramNameValue.setDataType("dataType");
+            paramNameValue.setDefaultValue((String)map.get(docParam));
+            paramNameValue.setName(docParam);
+            arrayOfParamNameValue.getItem().add(paramNameValue);
+        }
+
+        scm.bi12.ParamNameValues paramNameValues = new scm.bi12.ParamNameValues();
+        paramNameValues.setListOfParamNameValues(arrayOfParamNameValue);
+
+        scm.bi12.ReportRequest bi12Request = new scm.bi12.ReportRequest();
+        bi12Request.setReportAbsolutePath((String)map.get("_xdo"));
+        bi12Request.setAttributeFormat("pdf");
+        bi12Request.setParameterNameValues(paramNameValues);
+
+        scm.bi12.ReportService bi12Service = new scm.bi12.ReportService_Service().getReportService();
+        scm.bi12.ReportResponse bi12response = bi12Service.runReport(bi12Request, "weblogic", "sentineL19");
+
+        return bi12response.getReportBytes();
+    }
+
+    public static String process(String userName, String passName,String[] sourceUrl) throws IOException {
+
+        PDFMergerUtility pdfMerger = new PDFMergerUtility();
+
+        CookieHandler.setDefault(new CookieManager(null, CookiePolicy.ACCEPT_ALL));
+
+        for (String url : sourceUrl) {
+            if (url.length() > 0) {
+                URLConnection con = new URL(url+"&id="+userName+"&passwd="+passName).openConnection();
+
+                con.setRequestProperty("Content-Type", "application/json");
+                con.setRequestProperty("Accept", "*/*");
+                con.setRequestProperty("Cache-Control", "no-cache");
+                con.setRequestProperty("Accept-Charset", "UTF-8");
+                con.setRequestProperty("Connection", "Close");
+
+                pdfMerger.addSource(con.getInputStream());
+            }
+        }
+
+        BASE64Encoder encoder = new BASE64Encoder();
+        ByteArrayOutputStream colDocOutputstream = new ByteArrayOutputStream();
+
+        pdfMerger.setDestinationStream(colDocOutputstream);
+        pdfMerger.mergeDocuments(MemoryUsageSetting.setupTempFileOnly());
+
+        return encoder.encode(colDocOutputstream.toByteArray());
+    }
+
+    public static String process1(String userName, String passName,String[] sourceUrl) throws IOException {
+
+        //bi.ReportService service = new RegistrationPortTypeRPC_Service().getPort();
+        //invoke business method
+//        service.createReport();
+        //bi.ReportServiceStub bi1 = new src.bi.ReportServiceStub("");
+        //ReportServiceStub bi12 =
+
+
+        return "!";
+
+    }
+
+    public static void main(String[] args) {
+
+        String[] sourcePath = {"http://prodobiee:9704/xmlpserver/HARD+Templates/%D1%81%D0%BF%D1%80%D0%B0%D0%B2%D0%BA%D0%B0-%D1%83%D0%B2%D0%B5%D0%B4%D0%BE%D0%BC%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_cession.xdo?_xpf=&_xpt=1&_xdo=/HARD+Templates/%D1%81%D0%BF%D1%80%D0%B0%D0%B2%D0%BA%D0%B0-%D1%83%D0%B2%D0%B5%D0%B4%D0%BE%D0%BC%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_cession.xdo&cess_flg=Y&facsimile_flg=Y&contr_id=1-V13IQH8&_xt=%D1%81%D0%BF%D1%80%D0%B0%D0%B2%D0%BA%D0%B0-%D1%83%D0%B2%D0%B5%D0%B4%D0%BE%D0%BC%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5_cession&_xf=pdf&_xautorun=true&_xmode=3"};
+
+        try {
+            //PdfMerger pdfMerger = new PdfMerger();
+            //String s = process("weblogic", "sentinel12", sourcePath);
+            String s = process1("weblogic", "sentinel12", sourcePath);
+            System.out.println(s);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+	
+    public void doInvokeMethod(String methodName, SiebelPropertySet input, SiebelPropertySet output) throws SiebelBusinessServiceException {
+
+	    if (!methodName.equals("Merge"))
+		    throw new SiebelBusinessServiceException("NO_SUCH_METHOD", methodName + ": no such method");
+
+	    //String docCount = input.getProperty("Document Count");
+        String userName = input.getProperty("User Name");
+        String passName = input.getProperty("Password");
+        String sourceUrl = input.getProperty("Url");
+
+        if (userName == null || passName == null || sourceUrl == null)
+            throw new SiebelBusinessServiceException("WRONG_PARAM", "Param: empty");
+
+        try {
+            //PdfMerger pdfMerger = new PdfMerger(userName, passName, sourceUrl);
+            //ByteArrayOutputStream mergedPDFOutputStream = process(userName, passName, sourceUrl);
+            //output.setByteValue(process(userName, passName, sourceUrl).toByteArray());
+            output.setValue(process(userName, passName, sourceUrl.split(";")));
+        }
+	    catch (Exception e) {
+            throw new SiebelBusinessServiceException("WRONG_MERGE", e.getLocalizedMessage());
+        }
+	}
+}

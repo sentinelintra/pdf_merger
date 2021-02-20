@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="pdf_merger:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/pdf_merger_jar</output-path>
+    <root id="archive" name="pdf_merger.jar">
+      <element id="module-output" name="pdf_merger" />
+      <element id="extracted-dir" path="C:/CLASSES/pdfbox-app-2.0.21.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
